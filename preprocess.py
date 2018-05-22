@@ -6,9 +6,10 @@ from lxml import etree
 import os
 import numpy as np
 
-def load_images(input_dir, anno_dir, output_dir):
+def load_images(input_dir, anno_dir):
     
     images = []
+    labels = []
     
     class_num = 0
     
@@ -19,6 +20,7 @@ def load_images(input_dir, anno_dir, output_dir):
         
         image_list = os.listdir(input_dir + "/" + class_folder_im)
         anno_list = os.listdir(anno_dir + "/" + class_folder_anno)
+        print("Reading folder: ", class_num)
         for image, annotation in zip( image_list, anno_list ):
             
             image_dir = path_im + "/" + image
@@ -28,13 +30,15 @@ def load_images(input_dir, anno_dir, output_dir):
             bndbox = read_annotations(annotation_dir)
             
             processed_image = process_image(im, [64, 64], bndbox, True)
+
+            labels.append(class_num)
+            images.append(processed_image)
             
-            image_data = [class_num processed_image]
-            images.append(image_data)
-            
+#        if class_num > 80:
+#            break
         class_num += 1
             
-            
+    return images, labels
                     
 def read_annotations(path):
     
@@ -54,20 +58,27 @@ def process_image(image, size, bndbox, BW: bool):
     xMax = int( bndbox[2] )
     yMax = int( bndbox[3] )
     
-    io.imshow(image)
-    plt.show()
-    
-    im = image[xMin:xMax, yMin:yMax, :]
+    im = image[yMin:yMax, xMin:xMax, :]
     im = resize(im, (size[0], size[1]))
-    im = color.rgb2gray(im)
     
-    io.imshow(im)
-    plt.show()
+    if BW:
+        im = color.rgb2gray(im)
     
     return im
 
+def save_data(target_dir, data, labels):
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+    
+    label_name = f"{target_dir}/labels"
+    data_name = f"{target_dir}/data"
+
+    np.save(data_name, data)
+    np.save(label_name, labels)
+
 def main():
-    load_images("Images", "Annotation", "ProcessedData")
+    data, labels = load_images("Images", "Annotation")
+    save_data("Processed", data, labels)
 
 if __name__ == '__main__':
     main()
