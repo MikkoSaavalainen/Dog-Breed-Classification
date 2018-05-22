@@ -26,16 +26,20 @@ def load_images(input_dir, anno_dir):
             image_dir = path_im + "/" + image
             im = io.imread(image_dir)
             
+            # For some reasons one of the images when loaded had an extra color
+            # channel that was filled with the value 255 repeating. This is to 
+            # deal with this weird edge case without removing the image
+            # entirely
+            im = im[ :, :, 0:3]
+            
             annotation_dir = path_anno + "/" + annotation
             bndbox = read_annotations(annotation_dir)
             
-            processed_image = process_image(im, [64, 64], bndbox, True)
+            processed_image = process_image(im, [64, 64], bndbox, False)
 
             labels.append(class_num)
             images.append(processed_image)
             
-#        if class_num > 80:
-#            break
         class_num += 1
             
     return images, labels

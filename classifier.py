@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 from keras.utils import np_utils
 
 def main():
@@ -19,11 +20,16 @@ def main():
     
     model = make_model()
     
-    model.fit(x_train, y_train, epochs=10, batch_size=100, 
-              validation_data = [x_test, y_test])
-#    trained_model = train_model(model, x_train, y_train)
-#    results = test_model(trained_model)
-    
+    # x_test and y_test are provided for the model training phase so that we
+    # can see accuracies during training
+    trained_model = train_model(model, x_train, y_train, x_test, y_test, 50, 100)
+    results = test_model(trained_model, x_test)
+
+    predictions = np.argmax(results, axis = 1)
+    predictions = np_utils.to_categorical(predictions, 120)
+    accuracy = accuracy_score(y_test, predictions)
+    print(accuracy)
+
 def make_model():
     
     from keras.models import Sequential
@@ -34,15 +40,18 @@ def make_model():
     
     model.add( Conv2D( filters = 32, kernel_size = (3,3), padding = 'same',
                        input_shape = (64, 64, 3)))
-    model.add( MaxPool2D(2,2))
+    model.add( MaxPool2D(2,2) )
+    model.add( Dropout(0.2) )
     
     model.add( Conv2D( filters = 32, kernel_size = (3,3), padding = 'same'))
-    model.add( MaxPool2D(2,2))
+    model.add( MaxPool2D(2,2) )
+    model.add( Dropout(0.2) )
     
     model.add( Flatten() )
     
+#    model.add( Dense(1024, activation='relu'))
+#    model.add( Dropout(0.90) )
     model.add( Dense(120, activation='softmax') )
-    model.add( Dropout(0.5) )
     
     model.summary()
     
@@ -54,12 +63,17 @@ def make_model():
     
     return model
     
-#def train_model():
-#    
-#    
-#    
-#def test_model():
-#    
-#    
+def train_model(model, x_train, y_train, x_test, y_test, epochs, batch_size):
+    
+    model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, 
+              validation_data = [x_test, y_test])
+    
+    return model
+    
+def test_model(model, x_test):
+    results = model.predict(x_test)
+    
+    return results
+    
 if __name__ == '__main__':
     main()
